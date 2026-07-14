@@ -1,0 +1,31 @@
+[project]
+name = "diff-2d"
+version = "0.1.0"
+description = "Diffusion 2D reconstruction"
+readme = "README.md"
+requires-python = "==3.10.18"
+dependencies = [
+    "matplotlib>=3.10.3",
+    "nmrglue>=0.11",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.4",
+    "scipy>=1.15.3",
+    "torch==2.4.1",
+    "torchmetrics==1.4.1",
+    "torchvision==0.19.1",
+    "tqdm>=4.67.1",
+]
+
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+  { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name="pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
