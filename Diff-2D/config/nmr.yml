@@ -1,0 +1,35 @@
+data:
+    row_size: 32
+    col_size: 64
+    channels: 4
+
+model:
+    type: "openai"
+    in_channels: 4
+    out_channels: 8
+    num_channels: 128
+    num_heads: 4
+    num_res_blocks: 2
+    attention_resolutions: "16,8"
+    dropout: 0.0
+    conv_resample: True
+    learn_sigma: True
+    use_scale_shift_norm: True
+    use_fp16: False
+    resblock_updown: True
+    num_heads_upsample: -1
+    var_type: 'fixedsmall'
+    num_head_channels: -1
+    image_size: 64
+    class_cond: False
+    use_new_attention_order: False
+
+diffusion:
+    beta_schedule: linear
+    beta_start: 0.0001
+    beta_end: 0.02
+    num_diffusion_timesteps: 1000
+
+sampling:
+    batch_size: 32
+    T_sampling: 1000
