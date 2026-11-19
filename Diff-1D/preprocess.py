@@ -47,13 +47,8 @@ def saveSpectrumToTXT(FID, factor):
     M = M.astype(np.float32)
     return M
 
-
 def preprocess_BMRB(data_path, target_path, mask_path, M=300, N=256, noise_factor=0):
-    # data = sio.loadmat(target_path)
-    # data = data['data']
-    # fid = data
-    # label_f = np.fft.fft2(fid)
-    # label_f = np.fliplr(data)
+
     dic, data = ng.pipe.read(target_path)
     label_f = np.fliplr(data)
     label_f = label_f / np.max(np.real(label_f.reshape(-1)))
@@ -63,13 +58,6 @@ def preprocess_BMRB(data_path, target_path, mask_path, M=300, N=256, noise_facto
     noise = np.sqrt(langda) * np.random.randn(M, N) + 1j * np.sqrt(langda) * np.random.randn(M, N)
     t_noise = np.fft.ifft2(label_f) + noise
     label_impure = np.fft.fft2(t_noise)
-    #
-    # FID_real1 = R1R2 + 1j * R1I2
-    # FID_real2 = I1R2 + 1j * I1I2
-    # a = FID_real1[:,0,0]
-    # plt.plot(np.real(a))
-    # plt.show()
-
 
     label_impure /= np.max(np.real(label_impure.reshape(-1)))
     area = label_impure[0:40, 0:25]
@@ -99,3 +87,4 @@ def preprocess_BMRB(data_path, target_path, mask_path, M=300, N=256, noise_facto
     sio.savemat(mask_name, {'mask_data': mask_data})
     sio.savemat(label_name, {'label_data': label_data})
     return SNR
+

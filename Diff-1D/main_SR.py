@@ -4,7 +4,7 @@ import logging
 import yaml
 import sys
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]='1'
+os.environ["CUDA_VISIBLE_DEVICES"]='0'
 import torch
 import numpy as np
 
@@ -17,46 +17,34 @@ def parse_args_and_config():
     parser = argparse.ArgumentParser(description=globals()["__doc__"])
 
     parser.add_argument(
-        "--config", type=str, default="nmr_20250325.yml", help="Path to the config file"
+        "--config", type=str, default="nmr.yml", help="Path to the config file"
     )
     parser.add_argument(
         "--seed", type=int, default=256, help="Set different seeds for diverse results")
     parser.add_argument(
-        "--exp", type=str, default="./model/ADM_20250325/", help="Path for saving running related data."
+        "--exp", type=str, default="./model/", help="Path for saving running related data."
     )
     parser.add_argument(
-        "--ckpt_load_name", type=str, default="model100000.pt", help="Load pre-trained ckpt"
-    )
-    parser.add_argument(
-        "--sigma_y", type=float, default=0.00, help="sigma_y"
-    )
-    parser.add_argument(
-        "--zeta", type=float, default=0.1, help="Zeta"
+        "--ckpt_load_name", type=str, default="model.pt", help="Load pre-trained ckpt"
     )
     parser.add_argument(
         "--T_sampling", type=int, default=1000, help="Total number of sampling steps"
     )
     parser.add_argument(
-        "-i",
-        "--image_folder",
-        type=str,
-        default="./results/",
-        help="The folder name of samples",
-    )
-    parser.add_argument(
         "--dataset_path", type=str, default="./Process_data", help="The folder of the dataset"
     )
     parser.add_argument(
-        "--mask_type", type=str, default="Rand", help="Undersampling type"
+        "--mask_type", type=str, default="Pois", help="Undersampling type"
     )
     parser.add_argument(
         "--sample_rate", type=int, default="25", help="Sample rate"
     )
     parser.add_argument(
-        "--nmr_domain", type=str, default="Freq", help="NMR domain"
+        "--nmr_type", type=str, default="15430", help="NMR type"
     )
     parser.add_argument(
-        "--nmr_type", type=str, default="15430", help="NMR type"
+        "--target_path", type=str, default="./nmrpipe_data/fully_sampled/test.ft2",
+        help="NMR spectra path"
     )
 
 
@@ -67,13 +55,11 @@ def parse_args_and_config():
         config = yaml.safe_load(f)
     new_config = dict2namespace(config)
 
-    args.dataset_path = Path(args.dataset_path) / "nmr_dc" / f"{args.mask_type}_SR_{args.sample_rate}_{args.nmr_domain}_{args.nmr_type}"
+    args.dataset_path = Path(args.dataset_path) / "nmr" / f"{args.mask_type}_SR_{args.sample_rate}_{args.nmr_type}"
 
-    args.image_folder = Path(args.image_folder) / "nmr_dc" / f"{args.mask_type}_SR_{args.sample_rate}_{args.nmr_domain}_{args.nmr_type}"
-                            
-    args.image_folder.mkdir(exist_ok=True, parents=True)
-    if not os.path.exists(args.image_folder):
-        os.makedirs(args.image_folder)
+    args.dataset_path.mkdir(exist_ok=True, parents=True)
+    if not os.path.exists(args.dataset_path):
+        os.makedirs(args.dataset_path)
 
     # add device
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")

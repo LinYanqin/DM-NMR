@@ -71,47 +71,6 @@ def get_sigma(t, sde):
     return sigma_t
 
 
-def pred_x0_from_s(xt, s, t, sde):
-    """ Tweedie's formula for denoising. Assumes VE-SDE """
-    sigma_t = get_sigma(t, sde)
-    tmp = sigma_t.view(sigma_t.shape[0], 1, 1)
-    pred_x0 = xt + (tmp ** 2) * s
-    return pred_x0
-
-
-def recover_xt_from_x0(x0_t, s, t, sde):
-    sigma_t = get_sigma(t, sde)
-    tmp = sigma_t.view(sigma_t.shape[0], 1, 1)
-    xt = x0_t - (tmp ** 2) * s
-    return xt
-
-
-def pred_eps_from_s(s, t, sde):
-    sigma_t = get_sigma(t, sde)
-    tmp = sigma_t.view(sigma_t.shape[0], 1, 1)
-    pred_eps = -tmp * s
-    return pred_eps
-
-
-def _Dz(x): # Batch direction
-    y = torch.zeros_like(x)
-    y[:-1] = x[1:]
-    y[-1] = x[0]
-    return y - x
-
-
-def _DzT(x): # Batch direction
-    y = torch.zeros_like(x)
-    y[:-1] = x[1:]
-    y[-1] = x[0]
-
-    tempt = -(y-x)
-    difft = tempt[:-1]
-    y[1:] = difft
-    y[0] = x[-1] - x[0]
-
-    return y
-
 def im2row(im, winSize):
     batch_size, H = im.shape
     num_patches = H - winSize + 1
@@ -133,7 +92,7 @@ def row2im(patches, size_data, winSize):
     return res / count
 
 
-def SAKE(x, y, mask, sakeIter=1, wnthresh=0.2, ksize=32):
+def SAKE(x, y, mask, sakeIter=1, keep=6, ksize=32):
     device = x.device
     Trec = ifft(x)
     Trec = real_to_nchw_comp(Trec)
@@ -149,8 +108,7 @@ def SAKE(x, y, mask, sakeIter=1, wnthresh=0.2, ksize=32):
         patches = im2row(Krec, ksize)  # [batch, num_patches, kh]
 
         U,S,Vh = torch.linalg.svd(patches, full_matrices=False)
-        keep = math.floor(wnthresh * ksize)
-
+        # keep = math.floor(wnthresh * ksize)
 
         U_trunc = U[:, :, :keep]
         S_trunc = S[:, :keep]
@@ -170,30 +128,6 @@ def SAKE(x, y, mask, sakeIter=1, wnthresh=0.2, ksize=32):
     return Frec
 
 
-def CG(A, b, x, n_inner=5, eps=1e-5):
-    r = b - A(x)
-    p = r.clone()
-    rsold = torch.matmul(r.view(x.shape[0], 1, -1), r.view(x.shape[0], 1, -1).transpose(1, 2))
-
-    for i in range(n_inner):
-        Ap = A(p)
-        a = rsold / torch.matmul(p.view(x.shape[0], 1, -1), Ap.view(x.shape[0], 1, -1).transpose(1, 2))
-
-        x = x + a * p
-        r = r - a * Ap
-
-        rsnew = torch.matmul(r.view(x.shape[0], 1, -1), r.view(x.shape[0], 1, -1).transpose(1, 2))
-        if torch.sum(torch.abs(torch.sqrt(rsnew))) / x.shape[0] < eps:
-            break
-        p = r + (rsnew / rsold) * p
-        rsold = rsnew
-    return x
-
-
-def shrink(src, lamb):
-    return torch.sign(src) * torch.max(torch.abs(src)-lamb, torch.zeros_like(src))
-
-
 def clear_color(x):
     x = x.detach().cpu().squeeze().numpy()
     return np.transpose(x, (1, 0))
@@ -202,33 +136,6 @@ def clear_color(x):
 def clear(x):
     x = x.detach().cpu().squeeze().numpy()
     return x
-
-
-def ncwh_to_one_abs(x, domain):
-
-    if domain == "Time":
-        if len(x.shape) == 3:
-            x1 = x[0, 0, :] + 1j*x[0, 1, :]
-            x1 = x1.reshape(1, x.shape[-1])
-            x1 = np.abs(np.fft.fft(x1))
-            x1 = x1.squeeze()
-        else:
-            x1 = x[0, :] + 1j * x[1, :]
-            x1 = x1.reshape(1, x.shape[-1])
-            x1 = np.abs(np.fft.fft(x1))
-            x1 = x1.squeeze()
-    else:
-        if len(x.shape) == 3:
-            x1 = x[0, 0, :] + 1j*x[0, 1, :]
-            x1 = x1.reshape(1, x.shape[-1])
-            x1 = np.abs(x1)
-            x1 = x1.squeeze()
-        else:
-            x1 = x[0, :] + 1j * x[1, :]
-            x1 = x1.reshape(1, x.shape[-1])
-            x1 = np.abs(x1)
-            x1 = x1.squeeze()
-    return x1
 
 
 
@@ -310,20 +217,3 @@ def ifft(x):
   ifft_result = torch.fft.ifft(complex_tensor)
   return nchw_comp_to_real(ifft_result)
 
-def fft_c(x):
-    """ FFT with shifting DC to the center of the image """
-    return torch.fft.fft(x)
-
-def ifft_c(x):
-    """ IFFT with shifting DC to the corner of the image prior to transform"""
-    return torch.fft.ifft(x)
-
-def get_data_scaler(x):
-    x_min = np.min(x,(1,2), keepdims=True)
-    x_max = np.max(x,(1,2), keepdims=True)
-    x_temp = 2 * (x - x_min) / (x_max - x_min) - 1
-    return x_temp, x_min, x_max
-
-def get_data_inverse_scaler(x, x_min, x_max):
-    x_temp = (x + 1) * (x_max - x_min) / 2 + x_min
-    return x_temp

@@ -1,0 +1,28 @@
+# Direct dependencies.
+torch==1.10.1+cu102
+numpy==1.19.5
+scipy==1.1.0
+matplotlib==3.0.3
+tqdm==4.27.0
+PyYAML==6.0.1
+nmrglue==0.7
+packaging==21.3
+requests==2.27.1
+
+# Required transitive dependencies, pinned to the imported environment.
+# PyTorch / Python 3.6 compatibility.
+dataclasses==0.8; python_version < "3.7"
+typing-extensions==4.1.1
+# Matplotlib / packaging.
+cycler==0.10.0
+kiwisolver==1.3.1
+pyparsing==3.0.7
+python-dateutil==2.6.1
+six==1.16.0
+# requests (imported by dnnlib in the custom training workflows).
+certifi==2024.2.2
+charset-normalizer==2.0.12
+idna==3.7
+urllib3==1.26.18
+wcwidth==0.2.13
+
